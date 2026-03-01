@@ -33,6 +33,7 @@ export default function SubscriptionManagement() {
   const [studentCount, setStudentCount] = useState(200)
   const [selectedPlan, setSelectedPlan] = useState<string>('standard')
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [calculating, setCalculating] = useState(false)
 
   useEffect(() => {
@@ -42,14 +43,19 @@ export default function SubscriptionManagement() {
   const fetchPlans = async () => {
     try {
       setLoading(true)
+      setError(null)
       const response = await fetch(`/api/plans?studentCount=${studentCount}`)
       if (!response.ok) {
-        throw new Error('Failed to fetch plans')
+        throw new Error(`Failed to fetch plans: ${response.status}`)
       }
       const data = await response.json()
-      setPlans(data.plans || [])
+      if (!data.plans || !Array.isArray(data.plans)) {
+        throw new Error('Invalid response format')
+      }
+      setPlans(data.plans)
     } catch (error) {
       console.error('Error fetching plans:', error)
+      setError(error instanceof Error ? error.message : 'Failed to load plans')
       setPlans([])
     } finally {
       setLoading(false)
@@ -83,10 +89,48 @@ export default function SubscriptionManagement() {
     }
   }
 
-  if (loading || !plans || plans.length === 0) {
+  if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-lg text-gray-600">Loading pricing plans...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="text-center">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4">
+            <p className="text-lg font-semibold">Error Loading Plans</p>
+            <p className="text-sm">{error}</p>
+          </div>
+          <Button 
+            onClick={fetchPlans}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            Retry
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (!plans || plans.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="text-center">
+          <p className="text-lg text-gray-600 mb-4">No pricing plans available</p>
+          <Button 
+            onClick={fetchPlans}
+            variant="outline"
+          >
+            Refresh
+          </Button>
+        </div>
       </div>
     )
   }
@@ -124,7 +168,12 @@ export default function SubscriptionManagement() {
             </div>
             {studentCount >= 100 && plans[0] && plans[0].pricing && (
               <div className="mt-2 text-sm text-green-600">
-                {plans[0].pricing.discountLabel} - Save ₹{plans[0].pricing.savings}!
+                {plans[0].pricing.discountLabel} - Save ₹{plans[0].pricing.savings.toLocaleString()}!
+              </div>
+            )}
+            {studentCount >= 100 && (!plans[0] || !plans[0].pricing) && (
+              <div className="mt-2 text-sm text-blue-600">
+                Volume discount available for 100+ students
               </div>
             )}
           </div>

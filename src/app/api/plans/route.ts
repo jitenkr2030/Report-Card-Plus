@@ -170,7 +170,14 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching plans:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        message: 'Failed to fetch pricing plans',
+        plans: [],
+        studentCount,
+        currency: 'INR',
+        billingCycle: 'YEARLY'
+      },
       { status: 500 }
     )
   }
