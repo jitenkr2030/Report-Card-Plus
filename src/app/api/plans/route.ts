@@ -3,13 +3,8 @@ import { authenticate } from '@/middleware/auth'
 
 export async function GET(request: NextRequest) {
   try {
-    const authRequest = await authenticate(request)
-    if (!authRequest) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+    // Public endpoint - no authentication required for GET requests
+    // This allows potential customers to view pricing without logging in
 
     const { searchParams } = new URL(request.url)
     const studentCount = parseInt(searchParams.get('studentCount') || '1')
@@ -164,7 +159,8 @@ export async function GET(request: NextRequest) {
       plans: plansWithPricing,
       studentCount,
       currency: 'INR',
-      billingCycle: 'YEARLY'
+      billingCycle: 'YEARLY',
+      success: true
     })
 
   } catch (error) {
@@ -174,9 +170,10 @@ export async function GET(request: NextRequest) {
         error: 'Internal server error',
         message: 'Failed to fetch pricing plans',
         plans: [],
-        studentCount,
+        studentCount: 1,
         currency: 'INR',
-        billingCycle: 'YEARLY'
+        billingCycle: 'YEARLY',
+        success: false
       },
       { status: 500 }
     )
